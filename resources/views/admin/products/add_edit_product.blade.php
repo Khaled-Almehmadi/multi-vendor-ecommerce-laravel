@@ -30,7 +30,7 @@
             <!--begin::Row-->
             <div class="row g-4">
                 <!--begin::Col-->
-                <div class="col-md-6">
+                <div class="col-md-8">
                     <!--begin::Quick Example-->
                     <div class="card card-primary card-outline mb-4">
                         <!--begin::Header-->
@@ -154,10 +154,106 @@
                                     value="{{ old('product_weight', $product->product_weight ?? '') }}">
                             </div>
 
+                                                        <div class="mb-3">
+                            <label class="form-label mb-1">Product Attributes</label>
+                            
+                            {{-- header row --}}
+                            <div class="d-none d-md-flex fw-semibold bg-light border rounded px-2 py-1 mb-2">
+                                <div class="flex-fill col-2 ms-4">Size</div>
+                                <div class="flex-fill col-2 ms-4">SKU</div>
+                                <div class="flex-fill col-2 ms-4">Price</div>
+                                <div class="flex-fill col-2 ms-4">Stock</div>
+                                <div class="flex-fill col-2 ms-4">Sort</div>
+                                <div style="width:60px"></div>
+                            </div>
+                            {{-- dynamic rows --}}
+                            <div class="field_wrapper">
+                                {{-- first row --}}
+                                <div class="d-flex align-items-center gap-2 mb-2 attribute-row">
+                                    <input name="size[]" class="form-control flex-fill col-2" placeholder="Size">
+                                    <input name="sku[]" class="form-control flex-fill col-2" placeholder="SKU">
+                                    <input name="price[]" class="form-control flex-fill col-2" placeholder="Price">
+                                    <input name="stock[]" class="form-control flex-fill col-2" placeholder="Stock">
+                                    <input name="sort[]" class="form-control flex-fill col-2" placeholder="Sort">
+                                    <a href="javascript:void(0);" class="btn btn-sm btn-success add_button" title="Add row">
+                                        <i class="fas fa-plus"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+
+                        @if(isset($product['attributes']) && count($product['attributes']) > 0)
+                        <div class="mb-3">
+                            <label class="form-label mb-1">Existing Product Attributes</label>
+                            <div class="table-responsive">
+                                <table class="table table-bordered align-middle mb-0">
+                                    <thead class="table-light text-center">
+                                        <tr>
+                                            <th style="width: 15%;">Size</th>
+                                            <th style="width: 20%;">SKU</th>
+                                            <th style="width: 15%;">Price</th>
+                                            <th style="width: 15%;">Stock</th>
+                                            <th style="width: 15%;">Sort</th>
+                                            <th style="width: 15%;">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($product['attributes'] as $attribute)
+                                        <input type="hidden" name="attrId[]" value="{{ $attribute['id'] }}">
+                                        <tr class="text-center">
+                                            <td>{{ $attribute['size'] }}</td>
+                                            <td>{{ $attribute['sku'] }}</td>
+                                            <td>
+                                                <input type="number" name="update_price[]" 
+                                                    value="{{ $attribute['price'] }}" 
+                                                    class="form-control text-center" 
+                                                    required>
+                                            </td>
+                                            <td>
+                                                <input type="number" name="update_stock[]" 
+                                                    value="{{ $attribute['stock'] }}" 
+                                                    class="form-control text-center" 
+                                                    required>
+                                            </td>
+                                            <td>
+                                                <input type="number" name="update_sort[]" 
+                                                    value="{{ $attribute['sort'] }}" 
+                                                    class="form-control text-center" 
+                                                    required>
+                                            </td>
+                                           <td>
+                                            @if($attribute['status'] == 1)
+                                                <a class="updateAttributeStatus" data-attribute-id="{{ $attribute['id'] }}" style="color:#3f6ed3;" href="javascript:void(0)"><i class="fas fa-toggle-on" data-status="Active"></i></a>&nbsp;&nbsp;
+                                            @else
+                                                <a class="updateAttributeStatus" data-attribute-id="{{ $attribute['id'] }}" style="color:grey;" href="javascript:void(0)"><i class="fas fa-toggle-off" data-status="Inactive"></i></a>&nbsp;&nbsp;
+                                            @endif
+                                            <a title="Delete Attribute" href="javascript:void(0)" class="confirmDelete text-danger" data-module="product-attribute" data-id="{{ $attribute['id'] }}"><i class="fas fa-trash"></i></a>
+                                        </td>
+                                            
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        @endif
 
                             <!-- Product Main Image Upload Field -->
+                           
                             <div class="mb-3">
+
+
+
+
                                 <label class="form-label" for="main_image_dropzone">Product Main Image (Max 500 KB)</label>
+                                
+                                
+                                <!-- error message -->
+                             <div id="mainImageDropzoneError" style="color:red; display:none;"></div>
+
                                 <div class="dropzone" id="mainImageDropzone"></div>
 
                                      <!-- Hidden input to send uploaded image -->
@@ -166,35 +262,46 @@
 
                                 @if(!empty($product['main_image']))
                                     <a target="_blank" href="{{ url('front/images/products/'.$product['main_image']) }}">
-                                        <img style="width:50px; margin: 10px;" src="{{ asset('front/images/products/'.$product['main_image']) }}"></a><a style="color:#3f6ed3;" class="confirmDelete" title="Delete Product Image" 
+                                        <img style="width:50px; margin: 10px;" src="{{ url('product-image/thumbnail/'.$product->main_image) }}"></a><a style="color:#3f6ed3;" class="confirmDelete" title="Delete Product Image" 
                                     href="javascript:void(0)" data-module="product-main-image" data-id="{{ $product['id'] }}"><i class="fas fa-trash"></i>
                                     </a>
                                 @endif
                                 
                                
                             </div>
+                        
+
+                        <!-- Sortable Multible Images Container-->
 
                              <div class="mb-3">
                             <label class="form-label" for="product_images_dropzone">
                                 Alternate Product Images (Multiple Uploads Allowed, Max 500 KB each)
                             </label>
                             <div class="dropzone" id="productImagesDropzone"></div>
-
                             @if(isset($product->product_images) && $product->product_images->count() > 0)
-                            @foreach($product->product_images as $img)
-                            <div style="display:inline-block; position:relative; margin:5px;">
-                                <a target="_blank" href="{{ url('front/images/products/' . $img->image) }}">
-                                    <img src="{{ asset('front/images/products/' . $img->image) }}" style="width:50px;">
-                                </a>
-                                <a href="javascript:void(0)" class="confirmDelete" data-module="product-image" data-id="{{ $img->id }}" data-image="{{ $img->image }}">
-                                    <i class="fas fa-trash" style="position:absolute; top:0; right:0; color:red;"></i>
-                                </a>
-                            </div>
-                            
+                                @if($product->product_images->count() > 1)
+                                    <!-- Instruction line -->
+                                    <p class="drag-instruction">
+                                        <i class="fas fa-arrows-alt"></i> Drag and drop below images to reorder them
+                                    </p>
+                                @endif
+                                <!-- Container for sortable images -->
+                                <div id="sortable-images" class="sortable-wrapper d-flex gap-2 overflow-auto">
+                                    @foreach($product->product_images as $img)
+                                       <div class="sortable-item" style="position: relative;" data-id="{{ $img->id }}">
 
-                            @endforeach
-                        @endif
 
+                                        <a href="javascript:void(0)" class="confirmDelete" data-module="product-image" data-id="{{ $img->id }}" data-image="{{ $img->image }}">
+                                                <i class="fas fa-trash" style="position:absolute; top:0; right:0; color:red;"></i>
+                                            </a>
+                                            <a target="_blank" href="{{ url('front/images/products/' . $img->image) }}">
+                                                <img src="{{ url('product-image/thumbnail/'.$img->image) }}" style="width:50px;">
+                                            </a>
+                                            
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
                             <!-- Hidden input to collect alternate images -->
                             <input type="hidden" name="product_images" id="product_images_hidden">
                         </div>

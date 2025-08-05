@@ -1,6 +1,26 @@
 
 
 $(document).ready(function(){
+
+const maxField = 10;
+const wrapper = $('.field_wrapper');
+const addButton = '.add_button';
+const removeHtml = '<a href="javascript:void(0);" class="btn btn-sm btn-danger remove_button">Remove</a>';
+
+$(document).on('click', addButton, function(e) {
+    e.preventDefault();
+    if (wrapper.find('.attribute-row').length >= maxField) return;
+    const row = $(this).closest('.attribute-row').clone();
+    row.find('input').val(''); // clear values
+    row.find(addButton).replaceWith(removeHtml);
+    wrapper.append(row);
+});
+
+wrapper.on('click', '.remove_button', function(e) {
+    e.preventDefault();
+    $(this).closest('.attribute-row').remove();
+});
+
 // Check Admin Password is correct or not
 $("#current_pwd").keyup(function(){
     var current_pwd = $("#current_pwd").val();
@@ -94,6 +114,31 @@ $(document).on("click", ".updateCategoryStatus", function () {
         }
     });
 });
+
+// Update Attribute Status
+$(document).on("click", ".updateAttributeStatus", function() {
+    var status = $(this).find("i").data("status");
+    var attribute_id = $(this).data("attribute-id");
+
+    $.ajax({
+        headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+        type: 'post',
+        url: '/admin/update-attribute-status',
+        data: { status: status, attribute_id: attribute_id },
+        success: function(resp) {
+            if (resp['status'] == 0) {
+                $("a[data-attribute-id='" + attribute_id + "']").html("<i class='fas fa-toggle-off' style='color:grey' data-status='Inactive'></i>");
+            } else if (resp['status'] == 1) {
+                $("a[data-attribute-id='" + attribute_id + "']").html("<i class='fas fa-toggle-on' style='color:#3f6ed3' data-status='Active'></i>");
+            }
+        },
+        error: function() {
+            alert("Error");
+        }
+    });
+});
+
+
 
 $(document).on("click", "#deleteCategoryImage", function () {
   
@@ -252,6 +297,8 @@ $(document).on("click", ".confirmDelete", function(e) {
         }
     });
 });
+
+
 
 });
 

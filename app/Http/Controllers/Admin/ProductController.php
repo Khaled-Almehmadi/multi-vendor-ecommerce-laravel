@@ -72,7 +72,7 @@ class ProductController extends Controller
     public function edit(string $id)
 {
     $title = 'Edit Product';
-    $product = Product::with('product_images')->findOrFail($id);
+    $product = Product::with('product_images','attributes')->findOrFail($id);
     $getCategories = Category::getCategories('Admin');
   
     return view('admin.products.add_edit_product', compact('title', 'product', 'getCategories'));
@@ -107,6 +107,20 @@ public function update(ProductRequest $request, string $id)
         return response()->json([
             'status' => $status,
             'product_id' => $data['product_id']
+        ]);
+    }
+}
+
+ public function updateAttributeStatus(Request $request)
+{
+
+    
+    if ($request->ajax()) {
+        $data = $request->all();
+        $status = $this->productService->updateAttributeStatus($data);
+        return response()->json([
+            'status' => $status,
+            'attribute_id' => $data['attribute_id']
         ]);
     }
 }
@@ -165,6 +179,38 @@ public function deleteProductImage($id)
 {
     $message = $this->productService->deleteProductImage($id);
     return redirect()->back()->with('success_message', $message);
+}
+
+public function deleteProductAttribute($id)
+{
+    $message = $this->productService->deleteProductAttribute($id);
+    return redirect()->back()->with('success_message', $message);
+}
+
+public function updateImageSorting(Request $request)
+{
+    $this->productService->updateImageSorting($request->sorted_images);
+    return response()->json(['status' => 'success']);
+}
+
+public function deleteDropzoneImage(Request $request)
+{
+    $deleted= $this->productService->deleteDropzoneImage($request->image);
+    return response()->json(['status' => $deleted?'deleted':'file_not_found'],$deleted?200:404);
+}
+
+public function deleteTempProductImage(Request $request)
+{
+    $deleted= $this->productService->deleteDropzoneImage($request->filename);
+    return response()->json(['status' => $deleted?'deleted':'file_not_found'],$deleted?200:404);
+}
+
+
+
+public function deleteTempProductVideo(Request $request)
+{
+    $deleted= $this->productService->deleteDropzoneVideo($request->filename);
+    return response()->json(['status' => $deleted?'deleted':'file_not_found'],$deleted?200:404);
 }
 
 }

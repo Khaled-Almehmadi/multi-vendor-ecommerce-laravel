@@ -253,114 +253,205 @@ $(document).ready(function(){
 <!-- Dropzone JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.js"></script>
 
+<!-- jQuery UI -->
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+
+
 <script>
     Dropzone.autoDiscover = false;
 
-    // Main Image Dropzone
-    let mainImageDropzone = new Dropzone("#mainImageDropzone", {
-        url: "{{ route('product.upload.image') }}",
-        maxFiles: 1,
-        acceptedFiles: "image/*",
-        maxFilesize: 0.5, // 500KB
-        addRemoveLinks: true,
-        dictDefaultMessage: "Drag & drop product image or click to upload",
-        headers: {
-            'X-CSRF-TOKEN': "{{ csrf_token() }}"
-        },
-        success: function(file, response) {
-            document.getElementById('main_image_hidden').value = response.fileName;
-        },
-        error: function(file, message) {
-            alert(message);
-            this.removeFile(file);
-        },
-        init: function() {
-            this.on("maxfilesexceeded", function(file) {
-                this.removeAllFiles();
-                this.addFile(file);
+
+
+
+    // Main Image Dropzone   
+
+
+  
+
+// Product Main Image Dropzone
+let mainImageDropzone = new Dropzone("#mainImageDropzone", {
+    url: "{{ route('product.upload.image') }}",
+    maxFiles: 1,
+    acceptedFiles: "image/*",
+    maxFilesize: 0.5,
+    addRemoveLinks: true,
+    dictDefaultMessage: "Drag & drop product image or click to upload",
+    headers: {
+        'X-CSRF-TOKEN': "{{ csrf_token() }}"
+    },
+    success: function(file, response) {
+        // Store file name to reference it during deletion
+        file.uploadedFileName = response.fileName;
+        document.getElementById('main_image_hidden').value = response.fileName;
+    },
+    error: function(file, message) {
+        if (!file.alreadyRejected) {
+            file.alreadyRejected = true;
+            let errorContainer = document.getElementById('mainImageDropzoneError');
+            if (errorContainer) {            // here we can handle different possible formats object or pure message
+                errorContainer.innerText = typeof message === 'string' ? message : message.message;
+                errorContainer.style.display = 'block';
+                setTimeout(() => {
+                    errorContainer.style.display = 'none';
+                }, 4000);
+            }
+        }
+        this.removeFile(file);
+    },
+    removedfile: function(file) {
+        // Optional: Check if the file was successfully uploaded
+        if (file.uploadedFileName) {
+            $.ajax({
+                url: "{{ route('admin.products.delete-image') }}",
+                type: 'POST',
+                data: {
+                    _token: "{{ csrf_token() }}",
+                    image: file.uploadedFileName
+                },
+                success: function(response) {
+                    console.log("Main image deleted successfully");
+                    // Clear hidden field if the image is removed
+                    document.getElementById('main_image_hidden').value = "";
+                },
+                error: function() {
+                    console.log("Error deleting main image");
+                }
             });
         }
-    });
+        // Remove preview from Dropzone UI
+        var previewElement = file.previewElement;
+        if (previewElement != null) {
+            previewElement.parentNode.removeChild(previewElement);
+        }
+    },
+    init: function() {
+        this.on("maxfilesexceeded", function(file) {
+            this.removeAllFiles();
+            this.addFile(file);
+        });
+    }
+});
 
 
      // Product Images Dropzone
-            let productImagesDropzone = new Dropzone("#productImagesDropzone", {
-                url: "{{ route('product.upload.images') }}",
-                maxFiles: 10,
-                acceptedFiles: "image/*",
-                parallelUploads: 10,
-                uploadMultiple: false,
-                maxFilesize: 0.5,
-                addRemoveLinks: true,
-                dictDefaultMessage: "Drag & drop product images or click to upload",
-                headers: {
-                    'X-CSRF-TOKEN': "{{ csrf_token() }}"
-                },
-                init: function() {
-                    this.on("success", function(file, response) {
-                        // Append filename to hidden input
-                        let hiddenInput = document.getElementById('product_images_hidden');
-                        let currentVal = hiddenInput.value;
-                        
-                        if (currentVal === '') {
-                            hiddenInput.value = response.fileName;
-                        } else {
-                            hiddenInput.value = currentVal + ', ' + response.fileName;
-                        }
 
-                        file.uploadedFileName = response.fileName;
-                    });
+    let productImagesDropzone = new Dropzone("#productImagesDropzone", {
+    url: "{{ route('product.upload.images') }}",
+    maxFiles: 10,
+    acceptedFiles: "image/*",
+    parallelUploads: 10,
+    uploadMultiple: false,
+    maxFilesize: 0.5,
+    addRemoveLinks: true,
+    dictDefaultMessage: "Drag & drop product images or click to upload",
+    headers: {
+        'X-CSRF-TOKEN': "{{ csrf_token() }}"
+    },
+    init: function() {
+        this.on("success", function(file, response) {
+            let hiddenInput = document.getElementById('product_images_hidden');
+            let currentVal = hiddenInput.value;
+            hiddenInput.value = currentVal ? currentVal + ',' + response.fileName : response.fileName;
+            file.uploadedFileName = response.fileName;
+        });
 
-                    this.on("removedfile", function(file) {
-                        if (file.uploadedFileName) {
-                            let hiddenInput = document.getElementById('product_images_hidden');
-                            let currentVal = hiddenInput.value;
-                            let files = currentVal.split(', ');
-                            
-                            files = files.filter(name => name !== file.uploadedFileName);
-                            hiddenInput.value = files.join(', ');
-
-                            // Optional: Delete the file from server
-                            $.ajax({
-                                url: "{{ route('product.delete.temp.image') }}",
-                                type: 'POST',
-                                data: {filename: file.uploadedFileName},
-                                headers: {
-                                    'X-CSRF-TOKEN': "{{ csrf_token() }}"
-                                }
-                            });
-                        }
-                    });
-                }
-            });
-
-
-
-
-
+        this.on("removedfile", function(file) {
+            if (file.uploadedFileName) {
+                let hiddenInput = document.getElementById('product_images_hidden');
+                hiddenInput.value = hiddenInput.value.split(',').filter(name => name !== file.uploadedFileName).join(',');
+                
+                $.ajax({
+                    url: "{{ route('product.delete.temp.altimage') }}",
+                    type: 'POST',
+                    data: { 
+                        filename: file.uploadedFileName,
+                        _token: "{{ csrf_token() }}"
+                    },
+                    success: function(response) {
+                        console.log("Image deleted successfully");
+                    },
+                    error: function() {
+                        console.log("Error deleting image");
+                    }
+                });
+            }
+        });
+    }
+});
+    
+    
+    
+    
     // Product Video Dropzone
     let productVideoDropzone = new Dropzone("#productVideoDropzone", {
-        url: "{{ route('product.upload.video') }}",
-        maxFiles: 1,
-        acceptedFiles: "video/*",
-        maxFilesize: 2, // 2MB
-        addRemoveLinks: true,
-        dictDefaultMessage: "Drag & drop product video or click to upload",
-        headers: {
-            'X-CSRF-TOKEN': "{{ csrf_token() }}"
-        },
-        success: function(file, response) {
-            document.getElementById('product_video_hidden').value = response.fileName;
-        },
-        error: function(file, message) {
-            alert(message);
-            this.removeFile(file);
-        },
-        init: function() {
-            this.on("maxfilesexceeded", function(file) {
-                this.removeAllFiles();
-                this.addFile(file);
+    url: "{{ route('product.upload.video') }}",
+    maxFiles: 1,
+    acceptedFiles: "video/*",
+    maxFilesize: 2,
+    addRemoveLinks: true,
+    dictDefaultMessage: "Drag & drop product video or click to upload",
+    headers: {
+        'X-CSRF-TOKEN': "{{ csrf_token() }}"
+    },
+    success: function(file, response) {
+        document.getElementById('product_video_hidden').value = response.fileName;
+        file.uploadedFileName = response.fileName;
+    },
+    removedfile: function(file) {
+        if (file.uploadedFileName) {
+            document.getElementById('product_video_hidden').value = '';
+            $.ajax({
+                url: "{{ route('product.delete.temp.video') }}",
+                type: 'POST',
+                data: {
+                    filename: file.uploadedFileName,
+                    _token: "{{ csrf_token() }}"
+                },
+                success: function(response) {
+                    console.log("Video deleted successfully");
+                },
+                error: function() {
+                    console.log("Error deleting video");
+                }
             });
         }
-    });
+        let previewElement = file.previewElement;
+        if (previewElement != null) {
+            previewElement.parentNode.removeChild(previewElement);
+        }
+    },
+    init: function() {
+        this.on("maxfilesexceeded", function(file) {
+            this.removeAllFiles();
+            this.addFile(file);
+        });
+    }
+});
+
+    // Product Image Sort Script using  jQuery UI
+$("#sortable-images").sortable({
+    helper: 'clone',
+    placeholder: "sortable-placeholder",
+    forcePlaceholderSize: true,
+    scroll: true,
+    axis: 'x', // restrict to horizontal only
+    update: function(event, ui) {
+        let sortedIds = [];
+        $('#sortable-images .sortable-item').each(function(index) {
+            sortedIds.push({
+                id: $(this).data('id'),
+                sort: index
+            });
+        });
+        $.ajax({
+            url: "{{ route('admin.products.update-image-sorting') }}",
+            method: "POST",
+            data: {
+                _token: "{{ csrf_token() }}",
+                sorted_images: sortedIds
+            }
+        });
+    }
+});
 </script>

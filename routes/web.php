@@ -3,9 +3,36 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\CategoryController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\ProductController;
-
+use Intervention\Image\ImageManager;
+use Illuminate\Support\Facades\Response;
 Route::get('/', function () {
     return view('welcome');
+});
+
+
+//centralized image size control through config/image_sizes on the fly 
+Route::get('product-image/{size}/{filename}', function ($size, $filename) {
+    $sizes = config('image_sizes.product');
+    if (!isset($sizes[$size])) {
+        abort(404, 'Invalid size.');
+    }
+    $width = $sizes[$size]['width'];
+    $height = $sizes[$size]['height'];
+    $path = public_path('front/images/products/' . $filename);
+    
+    if (!file_exists($path)) {
+        abort(404, 'Image not found.');
+    }
+
+    $manager = new ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+    $image = $manager->read($path)
+        ->resize($width, $height, function ($constraint) {
+            $constraint->aspectRatio();
+            $constraint->upsize();
+        });
+    
+    $binary = $image->toJpeg(85); // Compression with 85% quality
+    return Response::make($binary)->header('Content-Type', 'image/jpeg');
 });
 
 
@@ -49,6 +76,18 @@ route::post('update-category-status',[CategoryController::class,'updateCategoryS
 route::post('delete-category-image',[CategoryController::class,'deleteCategoryImage']);
 route::post('delete-category-sizechart-image',[CategoryController::class,'deleteSizeChaImage']);
 route::post('update-product-status',[ProductController::class,'updateProductStatus']);
+route::post('update-attribute-status',[ProductController::class,'updateAttributeStatus']);
+Route::post('/products/update-image-sorting', [ProductController::class,'updateImageSorting'])->name('admin.products.update-image-sorting');
+Route::post('/products/delete-dropzone-image', [ProductController::class, 'deleteDropzoneImage'])->name('admin.products.delete-image');
+Route::post('/products/delete-temp-image', [ProductController::class, 'deleteTempProductImage'])->name('product.delete.temp.altimage');
+Route::post('/products/delete-temp-video', [ProductController::class, 'deleteTempProductVideo'])->name('product.delete.temp.video');
+
+
+
+//
+
+
+
 
 //delete subadmin
 route::get('delete-subadmin/{id}',[AdminController::class,'deleteSubadmin']);
@@ -73,7 +112,7 @@ Route::post('/product/upload-video', [ProductController::class, 'uploadVideo'])
 Route::get('delete-product-main-image/{id?}', [ProductController::class, 'deleteProductMainImage']);
 
 Route::get('delete-product-video/{id}', [ProductController::class, 'deleteProductVideo']);
-
+Route::get('delete-product-attribute/{id}', [ProductController::class, 'deleteProductAttribute']);
 
 Route::post('/product/upload-images', [ProductController::class, 'uploadImages'])
     ->name('product.upload.images');
