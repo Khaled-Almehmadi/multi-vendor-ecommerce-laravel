@@ -7,7 +7,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\Admin\CategoryService;
 use App\Models\category;
+use App\Models\ColumnPrefrence;
 use Illuminate\Support\Facades\Session;
+use League\Flysystem\UrlGeneration\PrefixPublicUrlGenerator;
+use Illuminate\Support\Facades\Auth;
 
 class CategoryController extends Controller
 {
@@ -25,9 +28,15 @@ if ($result['status'] === 'error') {
     return redirect('admin/dashboard')->with('error_message', $result['message']);
 }
 
+//we load  and inject category order 
+$categoriesSavedOrder = ColumnPrefrence::where('admin_id',Auth::guard('admin')->id())
+->where('table_name','categories')
+->value('column_order');
+
 return view('admin.categories.index', [
     'categories' => $result['categories'], 
-    'categoriesModule' => $result['categoriesModule']
+    'categoriesModule' => $result['categoriesModule'],
+    'categoriesSavedOrder'=>$categoriesSavedOrder
 ]);
     }
 

@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Session;
 use App\Models\category;
 use App\Models\Product;
 use App\Http\Requests\Admin\ProductRequest;
+use App\Models\ColumnPrefrence;
+use Illuminate\Support\Facades\Auth;
 class ProductController extends Controller
 {
 
@@ -32,10 +34,16 @@ class ProductController extends Controller
     if ($result['status'] == "error") {
         return redirect('admin/dashboard')->with('error_message', $result['message']);
     }
-    
+
+    //we load  and inject category order 
+$productsSavedOrder = ColumnPrefrence::where('admin_id',Auth::guard('admin')->id())
+->where('table_name','products')
+->value('column_order');
+
     return view('admin.products.index', [
         'products' => $result['products'],
-        'productsModule' => $result['productsModule']
+        'productsModule' => $result['productsModule'],'column_order'=>$productsSavedOrder,
+        'productsSavedOrder'=>$productsSavedOrder,
     ]);
 }
 

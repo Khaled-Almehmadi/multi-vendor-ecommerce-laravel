@@ -123,6 +123,8 @@ Route::post('/product/delete-temp-image', [ProductController::class, 'deleteTemp
 Route::get('delete-product-image/{id?}', [ProductController::class, 'deleteProductImage']);
 
 
+Route::post('/save-column-order',[AdminController::class,'saveColumnOrder']);
+
 
 
 });
